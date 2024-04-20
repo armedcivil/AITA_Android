@@ -2,10 +2,8 @@ package com.armedcivil.aita.android.http_client
 
 import android.os.Handler
 import android.os.Looper
+import com.armedcivil.aita.android.http_client.request.SignInRequest
 import com.armedcivil.aita.android.services.ApiService
-import okhttp3.Callback
-import okhttp3.ResponseBody
-import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import kotlin.concurrent.thread
@@ -28,7 +26,7 @@ class ApiClient {
     fun signin(email: String, password: String, callback: (result: Boolean) -> Unit) {
         thread {
             runCatching {
-                val response = service.signin(Credential(email, password)).execute()
+                val response = service.signin(SignInRequest(email, password)).execute()
                 if (response.body() !== null) {
                     accessToken = response.body()!!.accessToken
                     Handler(Looper.getMainLooper()).post {
