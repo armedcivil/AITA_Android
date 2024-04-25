@@ -2,6 +2,7 @@ package com.armedcivil.aita.android.view
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.PorterDuff
@@ -21,13 +22,14 @@ import coil.request.ImageRequest
 import com.armedcivil.aita.android.data.Floor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import javax.vecmath.AxisAngle4d
 import javax.vecmath.Matrix4d
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -44,6 +46,10 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
     private var secondStartY = 0f
     private var startDistance = 0f
     private var scale = 10f
+    private var floorBitmap: Bitmap? = null
+    private var job: Job? = null
+    private var centerX = 0.0
+    private var centerY = 0.0
 
     constructor(context: Context) : super(context) {
         init(null, 0)
@@ -119,7 +125,6 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
                         val deltaDistance = distance - startDistance
                         scale += deltaDistance / startDistance
                         scale = max(scale, 10f)
-                        Log.d("DEBUG", "scale : $scale")
                         secondStartX = event.getX(event.findPointerIndex(1))
                         secondStartY = event.getY(event.findPointerIndex(1))
                     }
@@ -133,43 +138,34 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
     }
 
     private fun run() {
-        GlobalScope.launch {
-            while (running) {
-                if (floor !== null) {
-                    synchronized(holder) {
-                        val canvas = holder.lockCanvas()
-                        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
-                        for (sceneObject in floor!!.objects) {
-                            val bitmap = bitmapMap[sceneObject.topImagePath] ?: continue
+        job =
+            GlobalScope.launch {
+                while (running) {
+                    if (floorBitmap !== null) {
+                        synchronized(holder) {
+                            val canvas = holder.lockCanvas()
+                            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
                             val matrix = Matrix()
-                            val axisAngle = AxisAngle4d()
-                            axisAngle.set(Matrix4d(sceneObject.matrix.elements.toDoubleArray()))
-                            matrix.preRotate(
-                                (axisAngle.getAngle() * axisAngle.getY() * 180 / Math.PI).toFloat(),
-                                (bitmap.width / 2).toFloat(),
-                                (bitmap.height / 2).toFloat(),
-                            )
                             matrix.preScale(
                                 scale / 250,
                                 scale / 250,
-                                (bitmap.width / 2).toFloat(),
-                                (bitmap.height / 2).toFloat(),
+                                0f,
+                                0f,
                             )
                             matrix.postTranslate(
-                                (offsetX + (width / 2) + (sceneObject.matrix.elements[12] * scale) - (bitmap.width / 2)).toFloat(),
-                                (offsetY + (height / 2) + (sceneObject.matrix.elements[14] * scale) - (bitmap.height / 2)).toFloat(),
+                                (offsetX + (width / 2) - (centerX * scale).toFloat()),
+                                (offsetY + (height / 2) - (centerY * scale).toFloat()),
                             )
                             canvas.drawBitmap(
-                                bitmap.copy(Bitmap.Config.ARGB_8888, false),
+                                floorBitmap!!,
                                 matrix,
                                 null,
                             )
+                            holder.unlockCanvasAndPost(canvas)
                         }
-                        holder.unlockCanvasAndPost(canvas)
                     }
                 }
             }
-        }
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
@@ -188,6 +184,8 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         running = false
+        job?.cancel()
+        job = null
     }
 
     fun updateFloor(floorData: Floor) {
@@ -207,10 +205,55 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
                         bitmapMap[sceneObject.topImagePath] = drawable.toBitmap()
                     }
                 }
+                captureFloor()
             }
-            withContext(Dispatchers.Main) {
-                invalidate()
+        }
+    }
+
+    private fun captureFloor() {
+        GlobalScope.launch {
+            val minX =
+                floor!!.objects.map { sceneObject -> sceneObject.matrix.elements[12] }
+                    .reduce { minX, x -> min(minX, x) }
+            val minZ =
+                floor!!.objects.map { sceneObject -> sceneObject.matrix.elements[14] }
+                    .reduce { minZ, z -> min(minZ, z) }
+            val maxX =
+                floor!!.objects.map { sceneObject -> sceneObject.matrix.elements[12] }
+                    .reduce { maxX, x -> max(maxX, x) }
+            val maxZ =
+                floor!!.objects.map { sceneObject -> sceneObject.matrix.elements[14] }
+                    .reduce { maxZ, z -> max(maxZ, z) }
+            val width = (maxX - minX) * 250
+            val height = (maxZ - minZ) * 250
+
+            centerX = -minX
+            centerY = -minZ
+
+            val bitmap = Bitmap.createBitmap(width.toInt(), height.toInt(), Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            canvas.drawColor(Color.BLUE, PorterDuff.Mode.ADD)
+            for (sceneObject in floor!!.objects) {
+                val topImageBitmap = bitmapMap[sceneObject.topImagePath] ?: continue
+                val matrix = Matrix()
+                val axisAngle = AxisAngle4d()
+                axisAngle.set(Matrix4d(sceneObject.matrix.elements.toDoubleArray()))
+                matrix.preRotate(
+                    (axisAngle.getAngle() * axisAngle.getY() * 180 / Math.PI).toFloat(),
+                    (topImageBitmap.width / 2).toFloat(),
+                    (topImageBitmap.height / 2).toFloat(),
+                )
+                matrix.postTranslate(
+                    ((centerX * 250) + (sceneObject.matrix.elements[12] * 250) - (topImageBitmap.width / 2)).toFloat(),
+                    ((centerY * 250) + (sceneObject.matrix.elements[14] * 250) - (topImageBitmap.height / 2)).toFloat(),
+                )
+                canvas.drawBitmap(
+                    topImageBitmap.copy(Bitmap.Config.ARGB_8888, false),
+                    matrix,
+                    null,
+                )
             }
+            floorBitmap = bitmap
         }
     }
 }
