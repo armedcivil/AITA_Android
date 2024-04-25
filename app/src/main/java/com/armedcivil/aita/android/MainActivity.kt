@@ -2,16 +2,13 @@ package com.armedcivil.aita.android
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,7 +41,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.armedcivil.aita.android.http_client.ApiClient
@@ -81,20 +77,21 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun Login(handleClickLogin: (email: String, password: String) -> Unit) {
-    var email by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("company1user1@example.com") }
+    var password by rememberSaveable { mutableStateOf("password") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
-    val formVisible = remember {
-        MutableTransitionState(false).apply {
-            targetState = true
+    val formVisible =
+        remember {
+            MutableTransitionState(false).apply {
+                targetState = true
+            }
         }
-    }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier =
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
     ) {
         Image(
             painter = painterResource(id = R.drawable.ic_logo),
@@ -103,24 +100,26 @@ fun Login(handleClickLogin: (email: String, password: String) -> Unit) {
         )
         AnimatedVisibility(
             visibleState = formVisible,
-            enter = expandVertically(
-                initialHeight = { 0 },
-                animationSpec = tween(durationMillis = 400, delayMillis = 2500)
-            )
-                    + fadeIn(
-                initialAlpha = 0f,
-                animationSpec = tween(durationMillis = 800, delayMillis = 2500)
-            )
+            enter =
+                expandVertically(
+                    initialHeight = { 0 },
+                    animationSpec = tween(durationMillis = 400, delayMillis = 2500),
+                ) +
+                    fadeIn(
+                        initialAlpha = 0f,
+                        animationSpec = tween(durationMillis = 800, delayMillis = 2500),
+                    ),
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(text = "Login", fontSize = 24.sp, modifier = Modifier.padding(top = 10.dp))
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 30.dp, start = 4.dp, end = 4.dp, bottom = 4.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 30.dp, start = 4.dp, end = 4.dp, bottom = 4.dp),
                 ) {
                     TextField(
                         value = email,
@@ -132,9 +131,9 @@ fun Login(handleClickLogin: (email: String, password: String) -> Unit) {
                 }
                 Column(
                     modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp, start = 4.dp, end = 4.dp, bottom = 4.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp, start = 4.dp, end = 4.dp, bottom = 4.dp),
                 ) {
                     TextField(
                         value = password,
@@ -143,10 +142,11 @@ fun Login(handleClickLogin: (email: String, password: String) -> Unit) {
                         label = { Text(text = "Password") },
                         singleLine = true,
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done
-                        ),
+                        keyboardOptions =
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.Password,
+                                imeAction = ImeAction.Done,
+                            ),
                         trailingIcon = {
                             val image =
                                 if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
@@ -155,24 +155,23 @@ fun Login(handleClickLogin: (email: String, password: String) -> Unit) {
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(imageVector = image, description)
                             }
-                        }
+                        },
                     )
                 }
                 Surface(modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp)) {
                     Button(
                         onClick = { handleClickLogin(email, password) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
                             text = "LOGIN",
                             fontSize = 24.sp,
-                            color = MaterialTheme.colorScheme.secondary
+                            color = MaterialTheme.colorScheme.secondary,
                         )
                     }
                 }
             }
         }
-
     }
 }
 
