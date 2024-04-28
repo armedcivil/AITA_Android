@@ -48,8 +48,8 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
     private var scale = 10f
     private var floorBitmap: Bitmap? = null
     private var job: Job? = null
-    private var centerX = 0.0
-    private var centerY = 0.0
+    private var floorWorldOriginX = 0.0
+    private var floorWorldOriginY = 0.0
 
     constructor(context: Context) : super(context) {
         init(null, 0)
@@ -153,8 +153,8 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
                                 0f,
                             )
                             matrix.postTranslate(
-                                (offsetX + (width / 2) - (centerX * scale / 250).toFloat()),
-                                (offsetY + (height / 2) - (centerY * scale / 250).toFloat()),
+                                (offsetX + (width / 2) - (floorWorldOriginX * scale / 250).toFloat()),
+                                (offsetY + (height / 2) - (floorWorldOriginY * scale / 250).toFloat()),
                             )
                             canvas.drawBitmap(
                                 floorBitmap!!,
@@ -229,8 +229,8 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
             val width = (maxX - minX)
             val height = (maxZ - minZ)
 
-            centerX = -minX
-            centerY = -minZ
+            floorWorldOriginX = -minX
+            floorWorldOriginY = -minZ
 
             val bitmap = Bitmap.createBitmap(width.toInt(), height.toInt(), Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
@@ -246,8 +246,8 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
                     (topImageBitmap.height / 2).toFloat(),
                 )
                 matrix.postTranslate(
-                    ((centerX) + (sceneObject.cx) - (topImageBitmap.width / 2)).toFloat(),
-                    ((centerY) + (sceneObject.cz) - (topImageBitmap.height / 2)).toFloat(),
+                    ((floorWorldOriginX) + (sceneObject.cx) - (topImageBitmap.width / 2)).toFloat(),
+                    ((floorWorldOriginY) + (sceneObject.cz) - (topImageBitmap.height / 2)).toFloat(),
                 )
                 canvas.drawBitmap(
                     topImageBitmap.copy(Bitmap.Config.ARGB_8888, false),
