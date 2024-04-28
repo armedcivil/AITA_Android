@@ -153,8 +153,8 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
                                 0f,
                             )
                             matrix.postTranslate(
-                                (offsetX + (width / 2) - (centerX * scale).toFloat()),
-                                (offsetY + (height / 2) - (centerY * scale).toFloat()),
+                                (offsetX + (width / 2) - (centerX * scale / 250).toFloat()),
+                                (offsetY + (height / 2) - (centerY * scale / 250).toFloat()),
                             )
                             canvas.drawBitmap(
                                 floorBitmap!!,
@@ -212,20 +212,22 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
     private fun captureFloor() {
         GlobalScope.launch {
-            val minX =
-                floor!!.objects.map { sceneObject -> sceneObject.matrix.elements[12] }
-                    .reduce { minX, x -> min(minX, x) }
-            val minZ =
-                floor!!.objects.map { sceneObject -> sceneObject.matrix.elements[14] }
-                    .reduce { minZ, z -> min(minZ, z) }
-            val maxX =
-                floor!!.objects.map { sceneObject -> sceneObject.matrix.elements[12] }
-                    .reduce { maxX, x -> max(maxX, x) }
-            val maxZ =
-                floor!!.objects.map { sceneObject -> sceneObject.matrix.elements[14] }
-                    .reduce { maxZ, z -> max(maxZ, z) }
-            val width = (maxX - minX) * 250
-            val height = (maxZ - minZ) * 250
+            val points =
+                floor!!.objects.flatMap { sceneObject ->
+                    val bitmap = bitmapMap[sceneObject.topImagePath]
+                    if (bitmap !== null) {
+                        sceneObject.transformedPoints(bitmap.width, bitmap.height).toList()
+                    } else {
+                        listOf()
+                    }
+                }
+
+            val minX = points.map { point -> point.x }.reduce { minX, x -> min(minX, x) }
+            val minZ = points.map { point -> point.z }.reduce { minZ, z -> min(minZ, z) }
+            val maxX = points.map { point -> point.x }.reduce { maxX, x -> max(maxX, x) }
+            val maxZ = points.map { point -> point.z }.reduce { maxZ, z -> max(maxZ, z) }
+            val width = (maxX - minX)
+            val height = (maxZ - minZ)
 
             centerX = -minX
             centerY = -minZ
@@ -244,8 +246,8 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
                     (topImageBitmap.height / 2).toFloat(),
                 )
                 matrix.postTranslate(
-                    ((centerX * 250) + (sceneObject.matrix.elements[12] * 250) - (topImageBitmap.width / 2)).toFloat(),
-                    ((centerY * 250) + (sceneObject.matrix.elements[14] * 250) - (topImageBitmap.height / 2)).toFloat(),
+                    ((centerX) + (sceneObject.cx) - (topImageBitmap.width / 2)).toFloat(),
+                    ((centerY) + (sceneObject.cz) - (topImageBitmap.height / 2)).toFloat(),
                 )
                 canvas.drawBitmap(
                     topImageBitmap.copy(Bitmap.Config.ARGB_8888, false),
