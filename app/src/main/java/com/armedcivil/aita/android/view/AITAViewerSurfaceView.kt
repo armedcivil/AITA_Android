@@ -28,9 +28,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import javax.vecmath.AxisAngle4d
 import javax.vecmath.Matrix4d
+import javax.vecmath.Point3d
+import kotlin.math.abs
+import kotlin.math.acos
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
+import kotlin.math.round
+import kotlin.math.sign
 import kotlin.math.sqrt
 
 class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
@@ -88,8 +93,7 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
                     startY = event.getY(event.findPointerIndex(0))
                     secondStartX = event.getX(event.findPointerIndex(1))
                     secondStartY = event.getY(event.findPointerIndex(1))
-                    startDistance =
-                        sqrt((startX - secondStartX).pow(2) + (startY - secondStartY).pow(2))
+                    startDistance = distance(startX, startY, secondStartX, secondStartY)
                 }
 
                 MotionEvent.ACTION_MOVE -> {
@@ -106,27 +110,42 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
                         startY = event.getY(event.findPointerIndex(0))
                     } else {
                         val distance =
-                            sqrt(
-                                (
-                                    event.getX(
-                                        event.findPointerIndex(0),
-                                    ) -
-                                        event.getX(
-                                            event.findPointerIndex(1),
-                                        )
-                                ).pow(2) +
-                                    (
-                                        event.getY(event.findPointerIndex(0)) -
-                                            event.getY(
-                                                event.findPointerIndex(1),
-                                            )
-                                    ).pow(2),
+                            distance(
+                                event.getX(event.findPointerIndex(0)),
+                                event.getY(event.findPointerIndex(0)),
+                                event.getX(event.findPointerIndex(1)),
+                                event.getY(event.findPointerIndex(1)),
                             )
                         val deltaDistance = distance - startDistance
                         scale += deltaDistance / startDistance
                         scale = max(scale, 10f)
                         secondStartX = event.getX(event.findPointerIndex(1))
                         secondStartY = event.getY(event.findPointerIndex(1))
+                    }
+                }
+
+                MotionEvent.ACTION_UP -> {
+                    val x = event.getX(event.findPointerIndex(0))
+                    val y = event.getY(event.findPointerIndex(0))
+                    if (floor !== null) {
+                        floor!!.objects.forEach { sceneObject ->
+                            val bitmap = bitmapMap[sceneObject.topImagePath]
+                            if (bitmap !== null) {
+                                val points =
+                                    sceneObject.transformedPoints(bitmap.width, bitmap.height)
+                                        .map { point ->
+                                            point.apply {
+                                                this.x =
+                                                    offsetX + (this.x * scale / 250) + (width / 2)
+                                                this.z =
+                                                    offsetY + (this.z * scale / 250) + (height / 2)
+                                            }
+                                        }
+                                if (sceneObject.isChair && isIntersect(x, y, points)) {
+                                    Log.d("DEBUG", sceneObject.toString())
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -257,6 +276,45 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
             }
             floorBitmap = bitmap
         }
+    }
+
+    private fun isIntersect(
+        px: Float,
+        pz: Float,
+        pointArray: List<Point3d>,
+    ): Boolean {
+        var degree = 0.0
+        pointArray.forEachIndexed { index, point ->
+            val p2x = point.x
+            val p2z = point.z
+            var p3x = 0.0
+            var p3z = 0.0
+            if (index < pointArray.size - 1) {
+                p3x = pointArray[index + 1].x
+                p3z = pointArray[index + 1].z
+            } else {
+                p3x = pointArray[0].x
+                p3z = pointArray[0].z
+            }
+
+            val ax = p2x - px
+            val az = p2z - pz
+            val bx = p3x - px
+            val bz = p3z - pz
+            val cos = (ax * bx + az * bz) / (sqrt(ax * ax + az * az) * sqrt(bx * bx + bz * bz))
+            val sign = sign(ax * bz - az * bx)
+            degree += sign * (acos(cos) * 180 / Math.PI)
+        }
+        return round(abs(degree)) == 360.0
+    }
+
+    private fun distance(
+        x1: Float,
+        y1: Float,
+        x2: Float,
+        y2: Float,
+    ): Float {
+        return sqrt((x1 - x2).pow(2) + (y1 - y2).pow(2))
     }
 }
 
