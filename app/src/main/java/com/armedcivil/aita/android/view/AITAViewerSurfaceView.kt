@@ -165,7 +165,7 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
                 while (running) {
                     if (floorBitmap !== null) {
                         val canvas = holder.lockCanvas()
-                        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+                        canvas?.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
                         val matrix = Matrix()
                         matrix.preScale(
                             scale / 250,
@@ -177,7 +177,7 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
                             (offsetX + (width / 2) - (floorWorldOriginX * scale / 250).toFloat()),
                             (offsetY + (height / 2) - (floorWorldOriginY * scale / 250).toFloat()),
                         )
-                        canvas.drawBitmap(
+                        canvas?.drawBitmap(
                             floorBitmap!!,
                             matrix,
                             null,
