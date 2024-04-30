@@ -2,13 +2,17 @@ package com.armedcivil.aita.android.http_client
 
 import android.os.Handler
 import android.os.Looper
+import com.armedcivil.aita.android.data.Reservation
+import com.armedcivil.aita.android.http_client.request.CreateReservationRequest
 import com.armedcivil.aita.android.http_client.request.SignInRequest
 import com.armedcivil.aita.android.http_client.response.FloorResponse
+import com.armedcivil.aita.android.http_client.response.GetReservationResponse
 import com.armedcivil.aita.android.services.ApiService
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import io.reactivex.rxjava3.subjects.Subject
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -65,6 +69,29 @@ class ApiClient {
                 }
             }
         }
+    }
+
+    suspend fun fetchReservations(sheetId: String): GetReservationResponse? {
+        val response =
+            GlobalScope.async {
+                service.getReservations(sheetId).execute().body()
+            }
+        return response.await()
+    }
+
+    suspend fun createReservation(
+        sheetId: String,
+        startTimestamp: String,
+        endTimestamp: String,
+    ): Reservation? {
+        val response =
+            GlobalScope.async {
+                service.postReservation(
+                    "Bearer $accessToken",
+                    CreateReservationRequest(sheetId, startTimestamp, endTimestamp),
+                ).execute().body()
+            }
+        return response.await()
     }
 
     fun signout() {

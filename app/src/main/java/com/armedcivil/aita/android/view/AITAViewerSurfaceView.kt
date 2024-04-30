@@ -20,6 +20,7 @@ import coil.ImageLoader
 import coil.imageLoader
 import coil.request.ImageRequest
 import com.armedcivil.aita.android.data.Floor
+import com.armedcivil.aita.android.data.SceneObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
@@ -55,6 +56,7 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
     private var job: Job? = null
     private var floorWorldOriginX = 0.0
     private var floorWorldOriginY = 0.0
+    private var onClickSheet: ((sceneObject: SceneObject) -> Unit)? = null
 
     constructor(context: Context) : super(context) {
         init(null, 0)
@@ -143,6 +145,7 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
                                         }
                                 if (sceneObject.isChair && isIntersect(x, y, points)) {
                                     Log.d("DEBUG", sceneObject.toString())
+                                    onClickSheet?.invoke(sceneObject)
                                 }
                             }
                         }
@@ -161,27 +164,25 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
             GlobalScope.launch {
                 while (running) {
                     if (floorBitmap !== null) {
-                        synchronized(holder) {
-                            val canvas = holder.lockCanvas()
-                            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
-                            val matrix = Matrix()
-                            matrix.preScale(
-                                scale / 250,
-                                scale / 250,
-                                0f,
-                                0f,
-                            )
-                            matrix.postTranslate(
-                                (offsetX + (width / 2) - (floorWorldOriginX * scale / 250).toFloat()),
-                                (offsetY + (height / 2) - (floorWorldOriginY * scale / 250).toFloat()),
-                            )
-                            canvas.drawBitmap(
-                                floorBitmap!!,
-                                matrix,
-                                null,
-                            )
-                            holder.unlockCanvasAndPost(canvas)
-                        }
+                        val canvas = holder.lockCanvas()
+                        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+                        val matrix = Matrix()
+                        matrix.preScale(
+                            scale / 250,
+                            scale / 250,
+                            0f,
+                            0f,
+                        )
+                        matrix.postTranslate(
+                            (offsetX + (width / 2) - (floorWorldOriginX * scale / 250).toFloat()),
+                            (offsetY + (height / 2) - (floorWorldOriginY * scale / 250).toFloat()),
+                        )
+                        canvas.drawBitmap(
+                            floorBitmap!!,
+                            matrix,
+                            null,
+                        )
+                        holder.unlockCanvasAndPost(canvas)
                     }
                 }
             }
@@ -204,7 +205,13 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         running = false
         job?.cancel()
+        while (job !== null && !job!!.isCompleted) {
+        } // 描画ループが終わるまで待つ
         job = null
+    }
+
+    fun setOnClickSheet(onClickSheet: ((sceneObject: SceneObject) -> Unit)) {
+        this.onClickSheet = onClickSheet
     }
 
     fun updateFloor(floorData: Floor) {
@@ -319,10 +326,13 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
 }
 
 @Composable
-fun AITAViewerSurface(floor: Floor) {
+fun AITAViewerSurface(
+    floor: Floor,
+    onClickSheet: (sceneObject: SceneObject) -> Unit,
+) {
     AndroidView(
         modifier = Modifier.fillMaxSize(),
-        factory = { context -> AITAViewerSurfaceView(context) },
+        factory = { context -> AITAViewerSurfaceView(context).apply { setOnClickSheet(onClickSheet) } },
         update = { view ->
             view.updateFloor(floor)
         },
