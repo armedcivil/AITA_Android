@@ -162,9 +162,12 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
     private fun run() {
         job =
             GlobalScope.launch {
+                Log.d("SURFACE", "描画ループを開始します")
                 while (running) {
                     if (floorBitmap !== null) {
+                        Log.d("SURFACE", "Canvas を lock します")
                         val canvas = holder.lockCanvas()
+                        Log.d("SURFACE", "Canvas を lock しました")
                         canvas?.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
                         val matrix = Matrix()
                         matrix.preScale(
@@ -182,9 +185,15 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
                             matrix,
                             null,
                         )
-                        holder.unlockCanvasAndPost(canvas)
+                        Log.d("SURFACE", "Canvas を unlock します")
+                        if (canvas !== null) {
+                            holder.unlockCanvasAndPost(canvas)
+                        }
+
+                        Log.d("SURFACE", "Canvas を unlock しました")
                     }
                 }
+                Log.d("SURFACE", "描画ループが終了しました")
             }
     }
 
@@ -203,10 +212,14 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
+        Log.d("SURFACE", "surfaceDestroyed が呼ばれました")
         running = false
+        Log.d("SURFACE", "job を cancel します")
         job?.cancel()
+        Log.d("SURFACE", "job を cancel しました")
         while (job !== null && !job!!.isCompleted) {
         } // 描画ループが終わるまで待つ
+        Log.d("SURFACE", "描画ループが完了しました")
         job = null
     }
 

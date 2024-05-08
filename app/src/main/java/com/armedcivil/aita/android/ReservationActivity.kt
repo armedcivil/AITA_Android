@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
@@ -139,6 +140,12 @@ fun ReservationsScreen(
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(it.user.name)
                             Text("${it.startTimestamp} ~ ${it.endTimestamp}")
+                        }
+                        Button(onClick = {}) {
+                            Icon(
+                                imageVector = Icons.Outlined.Delete,
+                                contentDescription = "",
+                            )
                         }
                     }
                 }
