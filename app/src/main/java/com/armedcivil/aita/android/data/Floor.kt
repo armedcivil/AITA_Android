@@ -1,6 +1,7 @@
 package com.armedcivil.aita.android.data
 
 import android.os.Parcelable
+import com.armedcivil.aita.android.view.AITAViewerSurfaceView
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import javax.vecmath.AxisAngle4d
@@ -21,10 +22,10 @@ data class SceneObject(
     val topImagePath: String,
 ) : Parcelable {
     @IgnoredOnParcel
-    val cx get() = matrix.elements[12] * 250
+    val cx get() = matrix.elements[12] * AITAViewerSurfaceView.SCALE_IN_TOP_IMAGE
 
     @IgnoredOnParcel
-    val cz get() = matrix.elements[14] * 250
+    val cz get() = matrix.elements[14] * AITAViewerSurfaceView.SCALE_IN_TOP_IMAGE
 
     private fun points(
         width: Int,

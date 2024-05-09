@@ -51,12 +51,17 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
     private var secondStartX = 0f
     private var secondStartY = 0f
     private var startDistance = 0f
-    private var scale = 10f
+    private var scale = DEFAULT_SCALE
     private var floorBitmap: Bitmap? = null
     private var job: Job? = null
     private var floorWorldOriginX = 0.0
     private var floorWorldOriginY = 0.0
     private var onClickSheet: ((sceneObject: SceneObject) -> Unit)? = null
+
+    companion object {
+        const val DEFAULT_SCALE = 120f
+        const val SCALE_IN_TOP_IMAGE = 250
+    }
 
     constructor(context: Context) : super(context) {
         init(null, 0)
@@ -138,9 +143,9 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
                                         .map { point ->
                                             point.apply {
                                                 this.x =
-                                                    offsetX + (this.x * scale / 250) + (width / 2)
+                                                    offsetX + (this.x * scale / SCALE_IN_TOP_IMAGE) + (width / 2)
                                                 this.z =
-                                                    offsetY + (this.z * scale / 250) + (height / 2)
+                                                    offsetY + (this.z * scale / SCALE_IN_TOP_IMAGE) + (height / 2)
                                             }
                                         }
                                 if (sceneObject.isChair && isIntersect(x, y, points)) {
@@ -164,34 +169,34 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
             GlobalScope.launch {
                 Log.d("SURFACE", "描画ループを開始します")
                 while (running) {
+                    Log.d("SURFACE", "Canvas を lock します")
+                    val canvas = holder.lockCanvas()
+                    Log.d("SURFACE", "Canvas を lock しました")
+                    canvas?.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+                    val matrix = Matrix()
+                    matrix.preScale(
+                        scale / SCALE_IN_TOP_IMAGE,
+                        scale / SCALE_IN_TOP_IMAGE,
+                        0f,
+                        0f,
+                    )
+                    matrix.postTranslate(
+                        (offsetX + (width / 2) - (floorWorldOriginX * scale / SCALE_IN_TOP_IMAGE).toFloat()),
+                        (offsetY + (height / 2) - (floorWorldOriginY * scale / SCALE_IN_TOP_IMAGE).toFloat()),
+                    )
                     if (floorBitmap !== null) {
-                        Log.d("SURFACE", "Canvas を lock します")
-                        val canvas = holder.lockCanvas()
-                        Log.d("SURFACE", "Canvas を lock しました")
-                        canvas?.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
-                        val matrix = Matrix()
-                        matrix.preScale(
-                            scale / 250,
-                            scale / 250,
-                            0f,
-                            0f,
-                        )
-                        matrix.postTranslate(
-                            (offsetX + (width / 2) - (floorWorldOriginX * scale / 250).toFloat()),
-                            (offsetY + (height / 2) - (floorWorldOriginY * scale / 250).toFloat()),
-                        )
                         canvas?.drawBitmap(
                             floorBitmap!!,
                             matrix,
                             null,
                         )
-                        Log.d("SURFACE", "Canvas を unlock します")
-                        if (canvas !== null) {
-                            holder.unlockCanvasAndPost(canvas)
-                        }
-
-                        Log.d("SURFACE", "Canvas を unlock しました")
                     }
+                    Log.d("SURFACE", "Canvas を unlock します")
+                    if (canvas !== null) {
+                        holder.unlockCanvasAndPost(canvas)
+                    }
+
+                    Log.d("SURFACE", "Canvas を unlock しました")
                 }
                 Log.d("SURFACE", "描画ループが終了しました")
             }
@@ -229,6 +234,10 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
     fun updateFloor(floorData: Floor) {
         this.floor = floorData
+        this.scale = DEFAULT_SCALE
+        this.offsetX = 0f
+        this.offsetY = 0f
+        this.floorBitmap = null
         GlobalScope.launch(Dispatchers.IO) {
             runBlocking {
                 for (sceneObject in floorData.objects) {
