@@ -154,22 +154,24 @@ fun ReservationsScreen(
                             Text(it.endTimestamp)
                         }
                         Spacer(Modifier.weight(1f))
-                        Button(onClick = { // TODO: 自身の予約のみ削除ボタンを表示する
-                            GlobalScope.launch {
-                                ApiClient.instance.deleteReservation(
-                                    it.id,
-                                )
-                                setReservation(
-                                    ApiClient.instance.fetchReservations(
-                                        sceneObject!!.id,
-                                    ),
+                        if (it.user.id == ApiClient.instance.userId()) {
+                            Button(onClick = {
+                                GlobalScope.launch {
+                                    ApiClient.instance.deleteReservation(
+                                        it.id,
+                                    )
+                                    setReservation(
+                                        ApiClient.instance.fetchReservations(
+                                            sceneObject!!.id,
+                                        ),
+                                    )
+                                }
+                            }, modifier = Modifier.align(Alignment.CenterVertically)) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Delete,
+                                    contentDescription = "Delete",
                                 )
                             }
-                        }, modifier = Modifier.align(Alignment.CenterVertically)) {
-                            Icon(
-                                imageVector = Icons.Outlined.Delete,
-                                contentDescription = "Delete",
-                            )
                         }
                     }
                 }

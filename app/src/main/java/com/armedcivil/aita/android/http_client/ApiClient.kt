@@ -9,6 +9,7 @@ import com.armedcivil.aita.android.http_client.response.DeleteReservationRespons
 import com.armedcivil.aita.android.http_client.response.FloorResponse
 import com.armedcivil.aita.android.http_client.response.GetReservationResponse
 import com.armedcivil.aita.android.services.ApiService
+import com.auth0.android.jwt.JWT
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import io.reactivex.rxjava3.subjects.Subject
@@ -102,6 +103,17 @@ class ApiClient {
                 service.deleteReservation("Bearer $accessToken", id).execute().body()
             }
         return response.await()
+    }
+
+    fun userId(): BigInteger {
+        accessToken ?: return BigInteger.ZERO
+        val jwt = JWT(accessToken!!)
+        val userIdString = jwt.getClaim("id").asString()
+        return if (userIdString !== null) {
+            userIdString.toBigInteger()
+        } else {
+            BigInteger.ZERO
+        }
     }
 
     fun signout() {
