@@ -250,6 +250,9 @@ class AITAViewerSurfaceView : SurfaceView, SurfaceHolder.Callback {
     }
 
     private fun captureFloor() {
+        if (floor!!.objects.isEmpty()) {
+            return
+        }
         GlobalScope.launch {
             val points =
                 floor!!.objects.flatMap { sceneObject ->
