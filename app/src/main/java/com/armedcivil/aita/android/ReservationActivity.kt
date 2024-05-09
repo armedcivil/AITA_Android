@@ -128,8 +128,18 @@ fun ReservationsScreen(
                         .padding(10.dp),
             ) {
                 reservation?.reservations?.map {
-                    Row(modifier = Modifier.padding(5.dp).fillMaxWidth()) {
-                        Surface(modifier = Modifier.width(24.dp).height(24.dp)) {
+                    Row(
+                        modifier =
+                            Modifier
+                                .padding(5.dp)
+                                .fillMaxWidth(),
+                    ) {
+                        Surface(
+                            modifier =
+                                Modifier
+                                    .width(24.dp)
+                                    .height(24.dp),
+                        ) {
                             if (it.user.iconImagePath !== null) {
                                 AsyncImage(
                                     model = "http://192.168.11.3:3001/${it.user.iconImagePath}",
@@ -137,14 +147,28 @@ fun ReservationsScreen(
                                 )
                             }
                         }
-                        Column(modifier = Modifier.fillMaxWidth()) {
+                        Column {
                             Text(it.user.name)
-                            Text("${it.startTimestamp} ~ ${it.endTimestamp}")
+                            Text(it.startTimestamp)
+                            Text("~", modifier = Modifier.align(Alignment.CenterHorizontally))
+                            Text(it.endTimestamp)
                         }
-                        Button(onClick = {}) {
+                        Spacer(Modifier.weight(1f))
+                        Button(onClick = { // TODO: 自身の予約のみ削除ボタンを表示する
+                            GlobalScope.launch {
+                                ApiClient.instance.deleteReservation(
+                                    it.id,
+                                )
+                                setReservation(
+                                    ApiClient.instance.fetchReservations(
+                                        sceneObject!!.id,
+                                    ),
+                                )
+                            }
+                        }, modifier = Modifier.align(Alignment.CenterVertically)) {
                             Icon(
                                 imageVector = Icons.Outlined.Delete,
-                                contentDescription = "",
+                                contentDescription = "Delete",
                             )
                         }
                     }
@@ -214,19 +238,25 @@ fun CreateReservationScreen(
                     Log.d("DEBUG", "End : " + dateString)
                     endDateString = dateString
                 })
-                Button(onClick = {
-                    GlobalScope.launch {
-                        val newReservation =
-                            ApiClient.instance.createReservation(
-                                sheetId,
-                                startDateString,
-                                endDateString,
-                            )
-                        if (newReservation !== null) {
-                            onCreated()
+                Button(
+                    onClick = {
+                        GlobalScope.launch {
+                            val newReservation =
+                                ApiClient.instance.createReservation(
+                                    sheetId,
+                                    startDateString,
+                                    endDateString,
+                                )
+                            if (newReservation !== null) {
+                                onCreated()
+                            }
                         }
-                    }
-                }, modifier = Modifier.fillMaxWidth().padding(5.dp)) { Text(text = "SAVE") }
+                    },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(5.dp),
+                ) { Text(text = "SAVE") }
             }
         }
     }
